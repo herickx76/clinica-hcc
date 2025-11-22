@@ -100,9 +100,24 @@ button { padding: 14px 20px; border-radius: 8px; cursor: pointer; font-size: 1re
 table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 15px; }
 th { background-color: var(--black-soft); color: var(--gold-primary); padding: 15px; text-align: left; display: table-cell;}
 td { padding: 15px; border-bottom: 1px solid var(--gray-light); vertical-align: middle; display: table-cell;}
-tr.cancelado { background-color: #ff0000; color: #ff0000; text-decoration: line-through; }
-tr.concluido { background-color: var(--success-green); color: var(--black-soft); }
-tr.pendente { background-color: var(--white-pure); }
+tr.concluido {
+    background-color: #d4edda !important; /* Fundo verde claro */
+    border-left: 5px solid #28a745;      /* Detalhe verde mais forte na esquerda */
+}
+
+/* Para garantir que o texto fique legível e verde escuro */
+tr.concluido td {
+    color: #155724;
+    font-weight: 500;
+}
+
+/* Se você quiser diferenciar o cancelado também (vermelho) */
+tr.cancelado {
+    background-color: #f8d7da !important;
+    color: #721c24;
+    text-decoration: line-through; /* Risca o texto */
+    opacity: 0.7;
+}
 
 /* Ações */
 .acoes-container { display: flex; gap: 5px; }
