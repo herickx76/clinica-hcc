@@ -100,8 +100,8 @@ button { padding: 14px 20px; border-radius: 8px; cursor: pointer; font-size: 1re
 table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 15px; }
 th { background-color: var(--black-soft); color: var(--gold-primary); padding: 15px; text-align: left; display: table-cell;}
 td { padding: 15px; border-bottom: 1px solid var(--gray-light); vertical-align: middle; display: table-cell;}
-tr.cancelado { background-color: #f9f9f9; color: #999; text-decoration: line-through; }
-tr.concluido { background-color: var(--gold-pale); color: var(--black-soft); }
+tr.cancelado { background-color: #ff0000; color: #ff0000; text-decoration: line-through; }
+tr.concluido { background-color: var(--success-green); color: var(--black-soft); }
 tr.pendente { background-color: var(--white-pure); }
 
 /* Ações */
