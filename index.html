@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HCC - Harmony Clinical Center</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div id="tela-login" class="login-overlay">
+        <div class="login-card">
+            <div class="logo-container" style="margin-bottom: 20px;">
+                <img src="logo_hc.png" alt="Logo HCC" class="clinica-logo" style="max-height: 120px;" onerror="this.style.display='none'">
+            </div>
+            <h2>Acesso Restrito</h2>
+            <p style="margin-bottom: 20px; color: #666;">HCC - Harmony Clinical Center</p>
+            
+            <form id="form-login">
+                <div class="form-group">
+                    <label>Usuário:</label>
+                    <input type="text" id="login-usuario" placeholder="Nome do usuário" required>
+                </div>
+                <div class="form-group">
+                    <label>Senha:</label>
+                    <input type="password" id="login-senha" placeholder="******" required>
+                </div>
+                <button type="submit" class="btn-dourado">Entrar no Sistema</button>
+            </form>
+            <p id="msg-erro" style="color: #dc3545; margin-top: 10px; display: none; font-weight: bold;">Usuário ou senha incorretos!</p>
+        </div>
+    </div>
+
+    <div id="sistema-principal" class="container" style="display: none;">
+        <header class="main-header">
+            <div class="logo-container">
+                <img src="logo_hc.png" alt="Logo HCC" class="clinica-logo" onerror="this.style.display='none'">
+            </div>
+            <div class="header-text">
+                <h1>HCC - Harmony Clinical Center</h1>
+                <p>Sistema Online em Tempo Real 🟢 | <span id="usuario-logado" style="color: #d4af37; font-weight: bold;"></span></p>
+                <button onclick="fazerLogout()" style="background: transparent; border: 1px solid #d4af37; color: #d4af37; padding: 5px 10px; margin-top: 10px; font-size: 0.8rem; width: auto;">Sair</button>
+            </div>
+        </header>
+
+        <section class="card">
+            <h2><i class="fas fa-calendar-plus"></i> Novo Agendamento</h2>
+            <form id="form-atendimento">
+                <div class="form-row">
+                    <div class="form-group" style="flex: 2;">
+                        <label>Nome da Cliente:</label>
+                        <input type="text" id="cliente" required placeholder="Ex: Maria Silva">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                         <label>Data:</label>
+                         <input type="date" id="data" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Procedimento:</label>
+                    <input type="text" id="procedimento" list="sugestoes-procedimentos" required placeholder="Selecione ou digite...">
+                    <datalist id="sugestoes-procedimentos">
+                        <option value="Botox">
+                        <option value="Preenchimento">
+                        <option value="Skin Booster">
+                        <option value="Bioestimulador">
+                        <option value="Depilação a Laser">
+                        <option value="Limpeza de Pele">
+                        <option value="Black Peel">
+                        <option value="Remoção de Tattoo">
+                        <option value="Ultraformer">
+                    </datalist>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Horário (Fixo 30 min):</label>
+                        <select id="horario" required>
+                            <option value="">Selecione...</option>
+                        </select>
+                    </div>
+    
+                    <div class="form-group">
+                        <label>Valor (R$):</label>
+                        <input type="number" id="valor" step="0.01" required placeholder="0,00">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-dourado">Agendar e Salvar na Nuvem</button>
+            </form>
+        </section>
+
+        <section class="card">
+            <h2><i class="far fa-clock"></i> Disponibilidade (<span id="data-titulo-mapa"></span>)</h2>
+            <div id="grid-horarios" class="grid-horarios"></div>
+        </section>
+
+        <section class="card import-area">
+            <h2><i class="fab fa-whatsapp"></i> Importar Rápido</h2>
+            <p style="font-size: 0.85rem; color: #555;">
+                Padrão: <em>NOME , PROCEDIMENTO , DATA , HORA , VALOR</em>
+            </p>
+            <textarea id="campo-importar" rows="3" placeholder="Ex: Ana , Botox , 24 , 14:30 , 200"></textarea>
+            <button onclick="importarDados()" class="btn-preto">Processar Texto</button>
+        </section>
+
+        <section class="card">
+            <div class="header-lista">
+                <h2><i class="fas fa-list"></i> Lista Detalhada</h2>
+                <button onclick="limparTudo()" class="btn-danger-outline">Limpar Banco de Dados</button>
+            </div>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data/Hora</th>
+                            <th>Cliente</th>
+                            <th>Procedimento</th>
+                            <th>Valor</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lista-clientes"></tbody>
+                </table>
+            </div>
+
+            <div class="resumo-financeiro">
+                <div class="box-total total-dia">
+                    <span><i class="fas fa-coins"></i> Recebido Hoje:</span>
+                    <strong id="total-dia">...</strong>
+                    <small id="previsao-dia" style="display:block; margin-top:5px; font-size:0.8rem; opacity: 0.8;">Carregando...</small>
+                </div>
+                <div class="box-total total-mes">
+                    <span><i class="fas fa-chart-line"></i> Recebido Mês:</span>
+                    <strong id="total-mes">...</strong>
+                </div>
+            </div>
+        </section>
+
+        <section class="export-section">
+            <button onclick="exportarRelatorio()" class="btn-excel">
+                <i class="fas fa-file-excel"></i> Baixar Planilha Completa (Excel)
+            </button>
+        </section>
+    </div>
+
+    <div id="modal-remarcar" class="modal-overlay">
+        <div class="modal-content">
+            <h3>📅 Remarcar Cliente</h3>
+            <p>Selecione a nova data e horário:</p>
+            <input type="hidden" id="id-para-remarcar">
+            
+            <div class="form-group">
+                <label>Nova Data:</label>
+                <input type="date" id="nova-data-modal">
+            </div>
+            
+            <div class="form-group">
+                <label>Novo Horário:</label>
+                <select id="novo-horario-modal">
+                    </select>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button onclick="confirmarRemarcacao()" class="btn-dourado">Salvar Alteração</button>
+                <button onclick="fecharModal()" class="btn-danger-outline">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+/* --- Variáveis de Cor (Paleta HCC) --- */
+:root {
+    --gold-primary: #d4af37;
+    --gold-light: #f2d06b;
+    --gold-pale: #fff8e1;
+    --black-soft: #222222;
+    --black-pure: #000000;
+    --white-pure: #ffffff;
+    --gray-light: #e9ecef;
+    --danger-red: #dc3545;
+    --success-green: #28a745;
+    --excel-green: #1D6F42;
+}
+
+/* Fundo Animado */
+body {
+    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    color: var(--black-soft);
+    margin: 0;
+    padding: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    top: -50%; left: -50%; width: 200%; height: 200%;
+    z-index: -1;
+    background: linear-gradient(-45deg, #fffcf9, #f7f1e3, #fcf6e8, #f2ece4);
+    background-size: 400% 400%;
+    animation: gradientBG 20s ease infinite;
+}
+
+@keyframes gradientBG {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* --- ESTILO DA TELA DE LOGIN --- */
+.login-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(135deg, #000, #222); /* Fundo escuro chique */
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.login-card {
+    background: #fff;
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    border-top: 4px solid var(--gold-primary);
+}
+
+/* Container Principal */
+.container { max-width: 950px; margin: 0 auto; position: relative; z-index: 1; }
+
+/* Header */
+.main-header { display: flex; flex-direction: column; align-items: center; margin-bottom: 30px; text-align: center; border-bottom: 2px solid var(--gold-primary); padding-bottom: 20px; }
+.clinica-logo { max-height: 80px; width: auto; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); }
+.header-text h1 { margin: 10px 0 0 0; color: var(--black-soft); font-weight: 300; letter-spacing: 1px; text-transform: uppercase; font-size: 1.5rem; }
+.header-text p { margin: 5px 0 0; color: var(--gold-primary); font-weight: 500; font-size: 0.9rem; }
+
+/* Cards */
+.card { background: var(--white-pure); padding: 20px; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.07); margin-bottom: 20px; border-top: 3px solid var(--gold-primary); }
+h2, h3 { color: var(--black-soft); margin-top: 0; font-size: 1.2rem; font-weight: 400; border-bottom: 1px solid var(--gray-light); padding-bottom: 10px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+h2 i { color: var(--gold-primary); }
+
+/* Form */
+.form-row { display: flex; gap: 15px; flex-wrap: wrap; }
+.form-group { margin-bottom: 15px; flex: 1; min-width: 200px; }
+label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.9rem; }
+input, select { width: 100%; padding: 12px; border: 1px solid var(--gray-light); border-radius: 8px; box-sizing: border-box; transition: all 0.3s ease; font-size: 16px; background-color: #fdfdfd; height: 48px; }
+input:focus, select:focus { outline: none; border-color: var(--gold-primary); box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1); background-color: var(--white-pure); }
+
+/* Botões */
+button { padding: 14px 20px; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: 600; width: 100%; transition: all 0.3s ease; border: none; display: flex; justify-content: center; align-items: center; gap: 8px; }
+.btn-dourado { background-color: var(--gold-primary); color: var(--white-pure); box-shadow: 0 4px 10px rgba(212, 175, 55, 0.3); }
+.btn-dourado:active { transform: scale(0.98); }
+.btn-preto { background-color: var(--black-soft); color: var(--gold-primary); }
+.btn-danger-outline { background-color: transparent; border: 1px solid var(--danger-red); color: var(--danger-red); width: auto; padding: 8px 15px; }
+
+/* Import Area */
+.import-area { background-color: #fffaf0; border: 1px dashed var(--gold-primary); }
+.import-area textarea { font-family: monospace; border: 1px solid var(--gold-primary); background-color: var(--white-pure); font-size: 14px; }
+
+/* Tabela */
+.table-responsive { width: 100%; }
+table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 15px; }
+th { background-color: var(--black-soft); color: var(--gold-primary); padding: 15px; text-align: left; display: table-cell;}
+td { padding: 15px; border-bottom: 1px solid var(--gray-light); vertical-align: middle; display: table-cell;}
+tr.cancelado { background-color: #f9f9f9; color: #999; text-decoration: line-through; }
+tr.concluido { background-color: var(--gold-pale); color: var(--black-soft); }
+tr.pendente { background-color: var(--white-pure); }
+
+/* Ações */
+.acoes-container { display: flex; gap: 5px; }
+.btn-acao { padding: 0; border-radius: 8px; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; color: var(--white-pure); font-size: 1rem; }
+.btn-ok { background-color: var(--success-green); }
+.btn-remarcar { background-color: var(--black-soft); color: var(--gold-primary); }
+.btn-cancel { background-color: var(--danger-red); }
+.btn-trash { background-color: transparent; color: #ccc; border: 1px solid #eee; }
+
+/* Totais */
+.header-lista { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;}
+.resumo-financeiro { display: flex; gap: 15px; margin-top: 30px; border-top: 1px solid var(--gray-light); padding-top: 20px; flex-wrap: wrap; }
+.box-total { flex: 1; min-width: 250px; padding: 20px; border-radius: 12px; text-align: center; color: var(--white-pure); box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
+.box-total strong { font-size: 1.8rem; display: block; font-weight: 700; }
+.total-dia { background: linear-gradient(135deg, var(--gold-primary), #e6c256); }
+.total-mes { background: linear-gradient(135deg, var(--black-soft), #111); color: var(--gold-primary); }
+
+/* Grid Mapa */
+.grid-horarios { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-top: 20px; }
+.slot { padding: 5px; border-radius: 8px; text-align: center; font-size: 0.9rem; border: 1px solid var(--gray-light); min-height: 55px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease; background: var(--white-pure); }
+.slot strong { display: block; font-size: 1.1rem; color: var(--black-soft); }
+.slot.livre { border-color: var(--gold-primary); color: var(--black-soft); cursor: pointer; }
+.slot.ocupado { background-color: var(--black-soft); color: var(--gold-primary); border-color: var(--black-pure); }
+.slot.ocupado strong { color: var(--white-pure); }
+
+/* Botão Excel */
+.export-section { text-align: center; margin-top: 30px; padding-bottom: 40px; }
+.btn-excel { background-color: var(--excel-green); color: white; max-width: 100%; margin: 0 auto; }
+
+/* Modal */
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); justify-content: center; align-items: flex-end; z-index: 1000; backdrop-filter: blur(3px);}
+.modal-content { background: var(--white-pure); padding: 25px; border-radius: 15px; width: 90%; max-width: 450px; box-shadow: 0 15px 40px rgba(0,0,0,0.4); border-top: 3px solid var(--gold-primary); margin-bottom: 20px; }
+@media (min-width: 768px) { .modal-overlay { align-items: center; } .modal-content { margin-bottom: 0; } }
+
+/* Mobile */
+@media (max-width: 768px) {
+    .container { padding: 0; }
+    .card { border-radius: 0; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-left: none; border-right: none; }
+    .form-row { flex-direction: column; gap: 0; }
+    .form-group { margin-bottom: 15px; }
+    .grid-horarios { grid-template-columns: repeat(3, 1fr); gap: 6px; } 
+    thead { display: none; }
+    tr { display: block; margin-bottom: 15px; border: 1px solid #eee; border-radius: 10px; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.02); overflow: hidden; }
+    tr.concluido { border-left: 5px solid var(--gold-primary); }
+    tr.cancelado { border-left: 5px solid var(--danger-red); opacity: 0.8; }
+    tr.pendente { border-left: 5px solid #ccc; }
+    td { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #f5f5f5; font-size: 0.95rem; text-align: right; }
+    td:last-child { border-bottom: none; justify-content: center; padding-top: 15px; padding-bottom: 15px; background-color: #fdfdfd;}
+    td:nth-of-type(1)::before { content: "Data/Hora"; font-weight: bold; color: #666; }
+    td:nth-of-type(2)::before { content: "Cliente"; font-weight: bold; color: #666; }
+    td:nth-of-type(3)::before { content: "Procedimento"; font-weight: bold; color: #666; }
+    td:nth-of-type(4)::before { content: "Valor"; font-weight: bold; color: #666; }
+    td:nth-of-type(5)::before { content: "Ações"; font-weight: bold; color: #666; display: none; } 
+    .acoes-container { width: 100%; justify-content: space-around; }
+    .btn-acao { width: 45px; height: 45px; font-size: 1.1rem; }
+    .resumo-financeiro { flex-direction: column; gap: 10px; }
+    .box-total { min-width: 100%; }
+}
