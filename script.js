@@ -215,48 +215,89 @@ function gerarMapaHorarios(dataSelecionada) {
     }
 }
 
-// Atualizar Tela
+// Substitua a função atualizarTela antiga por esta:
 function atualizarTela() {
     if(!listaClientes) return;
     listaClientes.innerHTML = '';
-    let somaDiaConfirmado = 0; let somaDiaPrevisto = 0; let somaMesConfirmado = 0;
+    
+    let somaDiaConfirmado = 0; 
+    let somaDiaPrevisto = 0; 
+    let somaMesConfirmado = 0;
+    
+    // Pega a data do input ou usa hoje
     const dataInput = document.getElementById('data') ? document.getElementById('data').value : hoje;
     const mesAtualIso = new Date().toISOString().slice(0, 7);
-    if(dataInput && tituloMapa) { tituloMapa.innerText = `(${dataInput.split('-').reverse().join('/')})`; gerarMapaHorarios(dataInput); }
+    
+    // Atualiza o mapa se a data mudou
+    if(dataInput && tituloMapa) { 
+        tituloMapa.innerText = `(${dataInput.split('-').reverse().join('/')})`; 
+        gerarMapaHorarios(dataInput); 
+    }
+
+    // ORDENAÇÃO: Primeiro por Data (Decrescente ou Crescente), depois por Hora
+    // Mudei para b.data - a.data se quiser ver os mais recentes primeiro, 
+    // mas mantive a ordem cronológica padrão abaixo:
     atendimentos.sort((a, b) => {
         if (a.data !== b.data) return a.data.localeCompare(b.data);
         return a.horario.localeCompare(b.horario);
     });
+
+    let ultimaDataRenderizada = null; // Variável de controle para o agrupamento
+
     atendimentos.forEach(item => {
+        // --- CÁLCULO DOS TOTAIS (Matemática continua igual) ---
         if (item.data === dataInput) {
             if (item.status === 'concluido') somaDiaConfirmado += item.valor;
             if (item.status === 'pendente') somaDiaPrevisto += item.valor;
         }
         if (item.data.startsWith(mesAtualIso) && item.status === 'concluido') somaMesConfirmado += item.valor;
+
+        // --- RENDERIZAÇÃO VISUAL ---
+        
+        // 1. Verifica se precisa criar o CABEÇALHO DA DATA
+        if (item.data !== ultimaDataRenderizada) {
+            const dataFormatada = item.data.split('-').reverse().join('/');
+            
+            // Cria uma linha especial que serve de separador
+            const rowSeparador = document.createElement('tr');
+            rowSeparador.className = "row-separador-data";
+            // colspan='5' faz a linha ocupar a tabela toda
+            rowSeparador.innerHTML = `
+                <td colspan="5">
+                    <i class="fas fa-calendar-day"></i> ${dataFormatada}
+                </td>
+            `;
+            listaClientes.appendChild(rowSeparador);
+            
+            ultimaDataRenderizada = item.data; // Atualiza o controle
+        }
+
+        // 2. Cria a linha normal do CLIENTE
         const dataPt = item.data.split('-').reverse().join('/');
         const linha = document.createElement('tr');
         linha.className = item.status;
+        
         linha.innerHTML = `
-            <td><strong>${dataPt}</strong><br><small>${item.horario}</small></td>
-            <td>${item.cliente}</td>
+            <td><strong>${item.horario}</strong></td> <td>${item.cliente}</td>
             <td>${item.procedimento}</td>
             <td>R$ ${item.valor.toFixed(2).replace('.', ',')}</td>
             <td>
                 <div class="acoes-container">
-                    <button onclick="window.marcarCompareceu('${item.id}')" class="btn-acao btn-ok"><i class="fas fa-check"></i></button>
-                    <button onclick="window.abrirModalRemarcar('${item.id}')" class="btn-acao btn-remarcar"><i class="fas fa-calendar-alt"></i></button>
-                    <button onclick="window.marcarCancelou('${item.id}')" class="btn-acao btn-cancel"><i class="fas fa-ban"></i></button>
-                    <button onclick="window.excluirDefinitivo('${item.id}')" class="btn-acao btn-trash"><i class="fas fa-trash"></i></button>
+                    <button onclick="window.marcarCompareceu('${item.id}')" class="btn-acao btn-ok" title="Concluir"><i class="fas fa-check"></i></button>
+                    <button onclick="window.abrirModalRemarcar('${item.id}')" class="btn-acao btn-remarcar" title="Remarcar"><i class="fas fa-calendar-alt"></i></button>
+                    <button onclick="window.marcarCancelou('${item.id}')" class="btn-acao btn-cancel" title="Cancelar"><i class="fas fa-ban"></i></button>
+                    <button onclick="window.excluirDefinitivo('${item.id}')" class="btn-acao btn-trash" title="Excluir"><i class="fas fa-trash"></i></button>
                 </div>
             </td>
         `;
         listaClientes.appendChild(linha);
     });
+
+    // Atualiza os painéis de dinheiro lá embaixo
     if(document.getElementById('total-dia')) document.getElementById('total-dia').innerText = `R$ ${somaDiaConfirmado.toFixed(2).replace('.', ',')}`;
     if(document.getElementById('previsao-dia')) document.getElementById('previsao-dia').innerText = `(Pendente: R$ ${somaDiaPrevisto.toFixed(2).replace('.', ',')})`;
     if(document.getElementById('total-mes')) document.getElementById('total-mes').innerText = `R$ ${somaMesConfirmado.toFixed(2).replace('.', ',')}`;
 }
-
 // Exportar Excel Profissional
 window.exportarRelatorio = function() {
     if (atendimentos.length === 0) { alert("Nada para exportar."); return; }

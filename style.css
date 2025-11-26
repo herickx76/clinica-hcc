@@ -95,28 +95,65 @@ button { padding: 14px 20px; border-radius: 8px; cursor: pointer; font-size: 1re
 .import-area { background-color: #fffaf0; border: 1px dashed var(--gold-primary); }
 .import-area textarea { font-family: monospace; border: 1px solid var(--gold-primary); background-color: var(--white-pure); font-size: 14px; }
 
-/* Tabela */
-.table-responsive { width: 100%; }
-table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 15px; }
-th { background-color: var(--black-soft); color: var(--gold-primary); padding: 15px; text-align: left; display: table-cell;}
+/* --- TABELA E SCROLL INTELIGENTE --- */
+.table-responsive { 
+    width: 100%; 
+    max-height: 500px; /* Limita a altura da tabela */
+    overflow-y: auto;  /* Adiciona scroll vertical apenas na tabela */
+    border: 1px solid var(--gray-light);
+    border-radius: 8px;
+    margin-top: 15px;
+}
+
+table { width: 100%; border-collapse: separate; border-spacing: 0; }
+
+/* Cabeçalho Fixo (Sticky Header) */
+th { 
+    background-color: var(--black-soft); 
+    color: var(--gold-primary); 
+    padding: 15px; 
+    text-align: left; 
+    display: table-cell;
+    position: sticky; /* Cola o cabeçalho no topo */
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
 td { padding: 15px; border-bottom: 1px solid var(--gray-light); vertical-align: middle; display: table-cell;}
+
+/* Estilo das Linhas de Status */
 tr.concluido {
-    background-color: #d4edda !important; /* Fundo verde claro */
-    border-left: 5px solid #28a745;      /* Detalhe verde mais forte na esquerda */
+    background-color: #d4edda !important; 
+    border-left: 5px solid #28a745;     
 }
+tr.concluido td { color: #155724; font-weight: 500; }
 
-/* Para garantir que o texto fique legível e verde escuro */
-tr.concluido td {
-    color: #155724;
-    font-weight: 500;
-}
-
-/* Se você quiser diferenciar o cancelado também (vermelho) */
 tr.cancelado {
     background-color: #f8d7da !important;
     color: #721c24;
-    text-decoration: line-through; /* Risca o texto */
+    text-decoration: line-through;
     opacity: 0.7;
+}
+
+/* --- ESTILO DO SEPARADOR DE DATA --- */
+tr.row-separador-data td {
+    background-color: #f8f9fa; /* Cinza bem clarinho */
+    color: var(--black-soft);
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    padding: 12px 15px;
+    border-top: 2px solid var(--gold-primary); /* Linha dourada para separar */
+    text-align: left;
+    position: sticky; /* Opcional: faz a data ficar fixa um pouco abaixo do header */
+    top: 45px; /* Ajuste conforme altura do header */
+    z-index: 5;
+}
+
+tr.row-separador-data i {
+    color: var(--gold-primary);
+    margin-right: 8px;
 }
 
 /* Ações */
@@ -128,7 +165,7 @@ tr.cancelado {
 .btn-trash { background-color: transparent; color: #ccc; border: 1px solid #eee; }
 
 /* Totais */
-.header-lista { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;}
+.header-lista { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 5px;}
 .resumo-financeiro { display: flex; gap: 15px; margin-top: 30px; border-top: 1px solid var(--gray-light); padding-top: 20px; flex-wrap: wrap; }
 .box-total { flex: 1; min-width: 250px; padding: 20px; border-radius: 12px; text-align: center; color: var(--white-pure); box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
 .box-total strong { font-size: 1.8rem; display: block; font-weight: 700; }
@@ -159,20 +196,53 @@ tr.cancelado {
     .form-row { flex-direction: column; gap: 0; }
     .form-group { margin-bottom: 15px; }
     .grid-horarios { grid-template-columns: repeat(3, 1fr); gap: 6px; } 
+    
     thead { display: none; }
+    
+    /* Configuração padrão do Card Mobile */
     tr { display: block; margin-bottom: 15px; border: 1px solid #eee; border-radius: 10px; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.02); overflow: hidden; }
     tr.concluido { border-left: 5px solid var(--gold-primary); }
     tr.cancelado { border-left: 5px solid var(--danger-red); opacity: 0.8; }
     tr.pendente { border-left: 5px solid #ccc; }
+    
     td { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #f5f5f5; font-size: 0.95rem; text-align: right; }
     td:last-child { border-bottom: none; justify-content: center; padding-top: 15px; padding-bottom: 15px; background-color: #fdfdfd;}
-    td:nth-of-type(1)::before { content: "Data/Hora"; font-weight: bold; color: #666; }
+    
+    /* Labels automáticos no mobile */
+    td:nth-of-type(1)::before { content: "Hora"; font-weight: bold; color: #666; } /* Mudei para Hora pois a data agora é separada */
     td:nth-of-type(2)::before { content: "Cliente"; font-weight: bold; color: #666; }
     td:nth-of-type(3)::before { content: "Procedimento"; font-weight: bold; color: #666; }
     td:nth-of-type(4)::before { content: "Valor"; font-weight: bold; color: #666; }
     td:nth-of-type(5)::before { content: "Ações"; font-weight: bold; color: #666; display: none; } 
+    
     .acoes-container { width: 100%; justify-content: space-around; }
     .btn-acao { width: 45px; height: 45px; font-size: 1.1rem; }
     .resumo-financeiro { flex-direction: column; gap: 10px; }
     .box-total { min-width: 100%; }
+
+    /* --- AJUSTE ESPECIAL PARA O SEPARADOR DE DATA NO MOBILE --- */
+    tr.row-separador-data {
+        background: transparent;
+        box-shadow: none;
+        border: none;
+        margin-top: 25px;
+        margin-bottom: 5px;
+        border-radius: 0;
+    }
+    
+    tr.row-separador-data td {
+        display: block;
+        width: 100%;
+        text-align: left;
+        padding-left: 0;
+        background: transparent;
+        border: none;
+        font-size: 1.1rem;
+        color: var(--black-soft);
+    }
+    
+    /* Remove os ::before gerados nos cards normais */
+    tr.row-separador-data td::before {
+        content: none !important;
+    }
 }
