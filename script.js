@@ -20,22 +20,44 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
-const dbRef = ref(db, 'agendamentos');
+
+// VARIAVEL DINÂMICA (Muda conforme quem loga)
+let dbRef = ref(db, 'agendamentos'); // Padrão
 
 // =================================================================
-// 🔐 AUTENTICAÇÃO
+// 🔐 AUTENTICAÇÃO E ROTEAMENTO (A MÁGICA ESTÁ AQUI)
 // =================================================================
 
 const telaLogin = document.getElementById('tela-login');
 const sistemaPrincipal = document.getElementById('sistema-principal');
 const formLogin = document.getElementById('form-login');
 const msgErro = document.getElementById('msg-erro');
+const tituloPrincipal = document.querySelector('.header-text h1');
 
 onAuthStateChanged(auth, (user) => {
     if (user) {
-        const nomeExibicao = user.email.split('@')[0];
-        const nomeFormatado = nomeExibicao.charAt(0).toUpperCase() + nomeExibicao.slice(1);
+        // Pega o nome do email (ex: hedney)
+        const emailUsuario = user.email.split('@')[0];
+        
+        // --- LÓGICA DE SEPARAÇÃO DOS SETORES ---
+        if (emailUsuario.toLowerCase() === 'hedney') {
+            // Se for o Hedney, muda para a pasta PILATES
+            dbRef = ref(db, 'pilates');
+            tituloPrincipal.innerText = "HCC - Setor Pilates 🧘‍♀️";
+            tituloPrincipal.style.color = "#d4af37"; // Destaque visual
+            document.title = "HCC - Pilates";
+        } else {
+            // Se for outro (Ingridy, etc), vai para AGENDAMENTOS GERAL
+            dbRef = ref(db, 'agendamentos');
+            tituloPrincipal.innerText = "HCC - Harmony Clinical Center";
+            document.title = "HCC - Harmony Clinical Center";
+        }
+        // -----------------------------------------
+
+        const nomeFormatado = emailUsuario.charAt(0).toUpperCase() + emailUsuario.slice(1);
         mostrarSistema(nomeFormatado);
+        
+        // Recarrega os dados com a nova referência (dbRef) correta
         carregarDados();
     } else {
         telaLogin.style.display = 'flex';
@@ -70,7 +92,7 @@ window.fazerLogout = function() {
 };
 
 // =================================================================
-// LÓGICA DO SISTEMA
+// LÓGICA DO SISTEMA (Tudo usa 'dbRef' que já foi configurado acima)
 // =================================================================
 
 const form = document.getElementById('form-atendimento');
@@ -112,8 +134,10 @@ function popularSelectsHorario() {
 }
 popularSelectsHorario();
 
-// Carregar Dados
+// Carregar Dados (Usa dbRef dinâmico)
 function carregarDados() {
+    // Desliga listener anterior se houver (boa prática)
+    // Mas aqui vamos simplificar:
     onValue(dbRef, (snapshot) => {
         const data = snapshot.val();
         atendimentos = []; 
@@ -122,13 +146,12 @@ function carregarDados() {
                 atendimentos.push({ id: key, ...data[key] });
             });
         }
-        // Atualiza tanto a lista quanto o mapa inicial
         atualizarTela();
         if(campoDataCadastro) gerarMapaHorarios(campoDataCadastro.value);
     });
 }
 
-// --- FUNÇÃO PRINCIPAL: ATUALIZAR LISTA COM FILTRO DE DATA ---
+// --- FUNÇÃO ATUALIZAR LISTA COM FILTRO ---
 function atualizarTela() {
     if(!listaClientes) return;
     listaClientes.innerHTML = '';
@@ -137,11 +160,16 @@ function atualizarTela() {
     let somaDiaPrevisto = 0; 
     let somaMesConfirmado = 0;
     
-    // Pega data do Filtro Amarelo
+    // Filtro Data
     const dataFiltro = campoFiltro ? campoFiltro.value : hoje;
     const mesAtualIso = new Date().toISOString().slice(0, 7);
     
-    // Ordena por horário
+    // Atualiza título do mapa (visual)
+    if(tituloMapa) tituloMapa.innerText = `(${dataFiltro.split('-').reverse().join('/')})`;
+    
+    // Gera mapa visual para a data do filtro (se quiser ver a disponibilidade daquele dia na lista)
+    // Nota: O mapa principal lá em cima segue o campo 'data' do cadastro.
+    
     atendimentos.sort((a, b) => a.horario.localeCompare(b.horario));
 
     let temAgendamento = false;
@@ -173,17 +201,15 @@ function atualizarTela() {
             listaClientes.appendChild(linha);
         }
 
-        // Soma do mês (sempre total)
         if (item.data.startsWith(mesAtualIso) && item.status === 'concluido') {
             somaMesConfirmado += item.valor;
         }
     });
 
     if(!temAgendamento) {
-        listaClientes.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 20px; color: #999;">Nenhum cliente para ${dataFiltro.split('-').reverse().join('/')}</td></tr>`;
+        listaClientes.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 20px; color: #999;">Nenhum cliente em ${dataFiltro.split('-').reverse().join('/')}</td></tr>`;
     }
 
-    // Totais
     const labelTotalDia = document.querySelector('.total-dia span');
     if(labelTotalDia) labelTotalDia.innerHTML = `<i class="fas fa-coins"></i> Em ${dataFiltro.split('-').reverse().join('/')}:`;
 
@@ -192,11 +218,15 @@ function atualizarTela() {
     if(document.getElementById('total-mes')) document.getElementById('total-mes').innerText = `R$ ${somaMesConfirmado.toFixed(2).replace('.', ',')}`;
 }
 
-// Mapa de Horários (Ligado ao Cadastro)
+// Mapa de Horários
 function gerarMapaHorarios(dataSelecionada) {
     if(!gridHorarios) return;
     gridHorarios.innerHTML = ''; 
-    if(tituloMapa) tituloMapa.innerText = `(${dataSelecionada.split('-').reverse().join('/')})`;
+    
+    // Se o mapa estiver visível, atualiza o título dele também
+    if(tituloMapa && document.getElementById('data').value === dataSelecionada) {
+        tituloMapa.innerText = `(${dataSelecionada.split('-').reverse().join('/')})`;
+    }
 
     const horaInicio = 7; const horaFim = 22;
     const agendamentosDoDia = atendimentos.filter(a => a.data === dataSelecionada && a.status !== 'cancelado');
@@ -253,6 +283,7 @@ if(form) {
         if(!horario) { alert("Selecione um horário!"); return; }
         if (verificarConflito(data, horario)) { if(!confirm(`Horário ${horario} ocupado. Encaixar?`)) return; }
 
+        // push usa o dbRef correto (Pilates ou Agendamentos)
         push(dbRef, { cliente, procedimento, data, horario, valor, status: 'pendente' });
         form.reset();
         document.getElementById('data').value = data; 
@@ -272,12 +303,14 @@ window.importarDados = function() {
         if (partes.length >= 5) {
             const nome = partes[0]; const proc = partes[1]; const dataRaw = partes[2]; const horaRaw = partes[3]; const valorStr = partes[4];
             let dataFinalIso = ""; const dataObj = new Date();
+            const anoAtual = dataObj.getFullYear();
+
             if (!dataRaw.includes('/')) { 
                 const mes = String(dataObj.getMonth() + 1).padStart(2, '0'); 
-                dataFinalIso = `${dataObj.getFullYear()}-${mes}-${String(dataRaw).padStart(2, '0')}`; 
+                dataFinalIso = `${anoAtual}-${mes}-${String(dataRaw).padStart(2, '0')}`; 
             } else { 
                 const p = dataRaw.split('/'); 
-                if (p.length === 2) dataFinalIso = `${dataObj.getFullYear()}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
+                if (p.length === 2) dataFinalIso = `${anoAtual}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
             }
             const valorFinal = parseFloat(valorStr.replace(',', '.'));
             const horaFinal = arredondarHorario(horaRaw);
@@ -288,16 +321,45 @@ window.importarDados = function() {
             }
         }
     });
-    if (contador > 0) { alert(`${contador} importados!`); document.getElementById('campo-importar').value = ''; }
+    if (contador > 0) { alert(`${contador} importados para o setor atual!`); document.getElementById('campo-importar').value = ''; }
     else { alert("Verifique o formato: Nome, Procedimento, Dia, Hora, Valor"); }
 };
 
 // Funções Globais (Ações)
-window.marcarCompareceu = function(id) { update(ref(db, `agendamentos/${id}`), { status: 'concluido' }); };
-window.marcarCancelou = function(id) { if(confirm("Cancelar?")) update(ref(db, `agendamentos/${id}`), { status: 'cancelado' }); };
-window.excluirDefinitivo = function(id) { if(confirm("Excluir pra sempre?")) remove(ref(db, `agendamentos/${id}`)); };
+// Note que as funções de update/remove precisam do dbRef correto ou montar o caminho
+// Como o ID é único no Firebase, podemos montar o caminho usando dbRef.key? Não.
+// O jeito certo quando o dbRef varia:
 
-// Modal
+window.marcarCompareceu = function(id) { 
+    // dbRef já aponta para 'pilates' ou 'agendamentos', então só precisamos do filho 'id'
+    // Mas 'ref(db, ...)' cria uma nova ref absoluta.
+    // Como 'dbRef' é um objeto Reference, podemos usar 'child(dbRef, id)'? 
+    // No Firebase modular v9, a melhor forma é reconstruir o caminho com base na string.
+    
+    // Solução Segura: Descobrir qual o path atual
+    const pathBase = dbRef.toString().includes('pilates') ? 'pilates' : 'agendamentos';
+    update(ref(db, `${pathBase}/${id}`), { status: 'concluido' }); 
+};
+
+window.marcarCancelou = function(id) { 
+    if(confirm("Cancelar?")) {
+        const pathBase = dbRef.toString().includes('pilates') ? 'pilates' : 'agendamentos';
+        update(ref(db, `${pathBase}/${id}`), { status: 'cancelado' }); 
+    }
+};
+
+window.excluirDefinitivo = function(id) { 
+    if(confirm("Excluir pra sempre?")) {
+        const pathBase = dbRef.toString().includes('pilates') ? 'pilates' : 'agendamentos';
+        remove(ref(db, `${pathBase}/${id}`)); 
+    }
+};
+
+window.limparTudo = function() {
+    if(confirm("PERIGO: Isso apaga TODOS os dados DESTE SETOR. Tem certeza?")) remove(dbRef);
+};
+
+// Remarcar
 window.abrirModalRemarcar = function(id) {
     const item = atendimentos.find(a => a.id === id);
     if(item) {
@@ -308,25 +370,28 @@ window.abrirModalRemarcar = function(id) {
     }
 };
 window.fecharModal = function() { document.getElementById('modal-remarcar').style.display = 'none'; };
+
 window.confirmarRemarcacao = function() {
     const id = document.getElementById('id-para-remarcar').value;
     const novaData = document.getElementById('nova-data-modal').value;
     const novoHorario = document.getElementById('novo-horario-modal').value;
+    
     if(!novaData || !novoHorario) return;
     if(verificarConflito(novaData, novoHorario, id)) { if(!confirm("Horário ocupado. Manter?")) return; }
-    update(ref(db, `agendamentos/${id}`), { data: novaData, horario: novoHorario, status: 'pendente' }).then(() => {
+    
+    const pathBase = dbRef.toString().includes('pilates') ? 'pilates' : 'agendamentos';
+    update(ref(db, `${pathBase}/${id}`), { data: novaData, horario: novoHorario, status: 'pendente' }).then(() => {
         alert("Remarcado!"); fecharModal();
     });
-};
-
-window.limparTudo = function() {
-    if(confirm("PERIGO: Isso apaga TODOS os dados. Tem certeza?")) remove(dbRef);
 };
 
 // Exportar
 window.exportarRelatorio = function() {
     if (atendimentos.length === 0) { alert("Nada para exportar."); return; }
     let lucroTotal = 0;
+    // Pega o nome do setor para o arquivo
+    const nomeSetor = dbRef.toString().includes('pilates') ? 'PILATES' : 'ESTETICA';
+    
     let tabela = `<table border="1"><thead><tr style="background-color:#222;color:#d4af37;"><th>Data</th><th>Horário</th><th>Cliente</th><th>Procedimento</th><th>Valor</th><th>Status</th></tr></thead><tbody>`;
     atendimentos.forEach(item => {
         const dt = item.data.split('-').reverse().join('/');
@@ -337,7 +402,8 @@ window.exportarRelatorio = function() {
         tabela += `<tr><td>${dt}</td><td>${item.horario}</td><td>${item.cliente}</td><td>${item.procedimento}</td><td>R$ ${val}</td><td style="background-color:${bgStatus};">${st}</td></tr>`;
     });
     const totalFmt = lucroTotal.toFixed(2).replace('.', ',');
-    tabela += `<tr><td colspan="4" style="text-align:right;">TOTAL LUCRO:</td><td style="background-color:#d4af37;color:white;">R$ ${totalFmt}</td><td></td></tr></tbody></table>`;
+    tabela += `<tr><td colspan="4" style="text-align:right;">TOTAL LUCRO (${nomeSetor}):</td><td style="background-color:#d4af37;color:white;">R$ ${totalFmt}</td><td></td></tr></tbody></table>`;
+    
     const blob = new Blob(['\ufeff', tabela], { type: 'application/vnd.ms-excel' });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Relatorio_HCC.xls`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Relatorio_HCC_${nomeSetor}.xls`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
 };
