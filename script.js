@@ -1,11 +1,10 @@
 // --- IMPORTAÇÕES DO FIREBASE ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-// Importamos as ferramentas de Autenticação Segura
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 // =================================================================
-// ⚠️ ÁREA DE CONFIGURAÇÃO - COLE SEU CÓDIGO DO FIREBASE ABAIXO ⚠️
+// CONFIGURAÇÃO FIREBASE
 // =================================================================
 const firebaseConfig = {
   apiKey: "AIzaSyBLaOyPzX_lQE9yy6cksYC57InP96wsg3A",
@@ -18,16 +17,13 @@ const firebaseConfig = {
   measurementId: "G-LG9QGXWV7Y"
 };
 
-// =================================================================
-
-// Inicializa Firebase e Auth
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const auth = getAuth(app); // Sistema de autenticação
+const auth = getAuth(app);
 const dbRef = ref(db, 'agendamentos');
 
 // =================================================================
-// 🔐 SISTEMA DE LOGIN BLINDADO (FIREBASE AUTH)
+// 🔐 AUTENTICAÇÃO
 // =================================================================
 
 const telaLogin = document.getElementById('tela-login');
@@ -35,51 +31,30 @@ const sistemaPrincipal = document.getElementById('sistema-principal');
 const formLogin = document.getElementById('form-login');
 const msgErro = document.getElementById('msg-erro');
 
-// Monitora o estado (Se a pessoa fechou a aba e voltou, o Google lembra dela)
 onAuthStateChanged(auth, (user) => {
     if (user) {
-        // Usuário está logado
-        const nomeExibicao = user.email.split('@')[0]; // Pega "ingridy" do email
+        const nomeExibicao = user.email.split('@')[0];
         const nomeFormatado = nomeExibicao.charAt(0).toUpperCase() + nomeExibicao.slice(1);
         mostrarSistema(nomeFormatado);
-        
-        // Só carrega os dados SE estiver logado (Segurança extra)
         carregarDados();
     } else {
-        // Usuário não está logado
         telaLogin.style.display = 'flex';
         sistemaPrincipal.style.display = 'none';
     }
 });
 
-// Função de Login
 if (formLogin) {
     formLogin.addEventListener('submit', function(e) {
         e.preventDefault();
-        
         let usuario = document.getElementById('login-usuario').value.trim().toLowerCase();
         const senha = document.getElementById('login-senha').value.trim();
-        
-        // Adiciona o domínio automaticamente para facilitar pra elas
-        // Elas digitam "ingridy", o sistema entende "ingridy@hcc.com"
         const emailCompleto = `${usuario}@hcc.com`;
 
         signInWithEmailAndPassword(auth, emailCompleto, senha)
-            .then((userCredential) => {
-                // Sucesso! O onAuthStateChanged vai lidar com a tela
-                msgErro.style.display = 'none';
-            })
+            .then(() => msgErro.style.display = 'none')
             .catch((error) => {
-                console.error("Erro login:", error.code);
                 msgErro.style.display = 'block';
-                
-                if(error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-                    msgErro.innerText = "Usuário ou senha incorretos!";
-                } else if (error.code === 'auth/too-many-requests') {
-                    msgErro.innerText = "Muitas tentativas. Aguarde um pouco.";
-                } else {
-                    msgErro.innerText = "Erro ao acessar: " + error.code;
-                }
+                msgErro.innerText = "Usuário ou senha incorretos!";
             });
     });
 }
@@ -91,12 +66,7 @@ function mostrarSistema(nomeUsuario) {
 }
 
 window.fazerLogout = function() {
-    signOut(auth).then(() => {
-        // Saiu com sucesso, a tela de login volta automaticamente
-        location.reload();
-    }).catch((error) => {
-        alert("Erro ao sair.");
-    });
+    signOut(auth).then(() => location.reload());
 };
 
 // =================================================================
@@ -105,17 +75,22 @@ window.fazerLogout = function() {
 
 const form = document.getElementById('form-atendimento');
 const listaClientes = document.getElementById('lista-clientes');
-const campoData = document.getElementById('data');
+const campoDataCadastro = document.getElementById('data');
 const gridHorarios = document.getElementById('grid-horarios');
 const tituloMapa = document.getElementById('data-titulo-mapa');
-const modal = document.getElementById('modal-remarcar');
-const inputIdRemarcar = document.getElementById('id-para-remarcar');
-const inputDataRemarcar = document.getElementById('nova-data-modal');
-const inputHoraRemarcar = document.getElementById('novo-horario-modal');
+const campoFiltro = document.getElementById('filtro-data-lista');
 
 let atendimentos = [];
 const hoje = new Date().toISOString().split('T')[0];
-if(campoData) campoData.value = hoje;
+
+// Inicialização de datas
+if(campoDataCadastro) campoDataCadastro.value = hoje;
+if(campoFiltro) {
+    campoFiltro.value = hoje;
+    campoFiltro.addEventListener('change', atualizarTela);
+}
+if(campoDataCadastro) campoDataCadastro.addEventListener('change', () => gerarMapaHorarios(campoDataCadastro.value));
+
 
 function popularSelectsHorario() {
     const selectPrincipal = document.getElementById('horario');
@@ -137,7 +112,7 @@ function popularSelectsHorario() {
 }
 popularSelectsHorario();
 
-// Função para carregar dados (Só é chamada após login)
+// Carregar Dados
 function carregarDados() {
     onValue(dbRef, (snapshot) => {
         const data = snapshot.val();
@@ -147,22 +122,122 @@ function carregarDados() {
                 atendimentos.push({ id: key, ...data[key] });
             });
         }
+        // Atualiza tanto a lista quanto o mapa inicial
         atualizarTela();
-    }, (error) => {
-        console.error("Erro ao ler dados:", error);
-        // Se der erro de permissão, é pq não está logado corretamente
+        if(campoDataCadastro) gerarMapaHorarios(campoDataCadastro.value);
     });
 }
 
-if(campoData) campoData.addEventListener('change', atualizarTela);
+// --- FUNÇÃO PRINCIPAL: ATUALIZAR LISTA COM FILTRO DE DATA ---
+function atualizarTela() {
+    if(!listaClientes) return;
+    listaClientes.innerHTML = '';
+    
+    let somaDiaConfirmado = 0; 
+    let somaDiaPrevisto = 0; 
+    let somaMesConfirmado = 0;
+    
+    // Pega data do Filtro Amarelo
+    const dataFiltro = campoFiltro ? campoFiltro.value : hoje;
+    const mesAtualIso = new Date().toISOString().slice(0, 7);
+    
+    // Ordena por horário
+    atendimentos.sort((a, b) => a.horario.localeCompare(b.horario));
 
+    let temAgendamento = false;
+
+    atendimentos.forEach(item => {
+        // Renderiza APENAS se for da data do filtro
+        if (item.data === dataFiltro) {
+            temAgendamento = true;
+
+            if (item.status === 'concluido') somaDiaConfirmado += item.valor;
+            if (item.status === 'pendente') somaDiaPrevisto += item.valor;
+
+            const linha = document.createElement('tr');
+            linha.className = item.status;
+            linha.innerHTML = `
+                <td><strong>${item.horario}</strong></td>
+                <td>${item.cliente}</td>
+                <td>${item.procedimento}</td>
+                <td>R$ ${item.valor.toFixed(2).replace('.', ',')}</td>
+                <td>
+                    <div class="acoes-container">
+                        <button onclick="window.marcarCompareceu('${item.id}')" class="btn-acao btn-ok" title="Concluir"><i class="fas fa-check"></i></button>
+                        <button onclick="window.abrirModalRemarcar('${item.id}')" class="btn-acao btn-remarcar" title="Remarcar"><i class="fas fa-calendar-alt"></i></button>
+                        <button onclick="window.marcarCancelou('${item.id}')" class="btn-acao btn-cancel" title="Cancelar"><i class="fas fa-ban"></i></button>
+                        <button onclick="window.excluirDefinitivo('${item.id}')" class="btn-acao btn-trash" title="Excluir"><i class="fas fa-trash"></i></button>
+                    </div>
+                </td>
+            `;
+            listaClientes.appendChild(linha);
+        }
+
+        // Soma do mês (sempre total)
+        if (item.data.startsWith(mesAtualIso) && item.status === 'concluido') {
+            somaMesConfirmado += item.valor;
+        }
+    });
+
+    if(!temAgendamento) {
+        listaClientes.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 20px; color: #999;">Nenhum cliente para ${dataFiltro.split('-').reverse().join('/')}</td></tr>`;
+    }
+
+    // Totais
+    const labelTotalDia = document.querySelector('.total-dia span');
+    if(labelTotalDia) labelTotalDia.innerHTML = `<i class="fas fa-coins"></i> Em ${dataFiltro.split('-').reverse().join('/')}:`;
+
+    if(document.getElementById('total-dia')) document.getElementById('total-dia').innerText = `R$ ${somaDiaConfirmado.toFixed(2).replace('.', ',')}`;
+    if(document.getElementById('previsao-dia')) document.getElementById('previsao-dia').innerText = `(A receber: R$ ${somaDiaPrevisto.toFixed(2).replace('.', ',')})`;
+    if(document.getElementById('total-mes')) document.getElementById('total-mes').innerText = `R$ ${somaMesConfirmado.toFixed(2).replace('.', ',')}`;
+}
+
+// Mapa de Horários (Ligado ao Cadastro)
+function gerarMapaHorarios(dataSelecionada) {
+    if(!gridHorarios) return;
+    gridHorarios.innerHTML = ''; 
+    if(tituloMapa) tituloMapa.innerText = `(${dataSelecionada.split('-').reverse().join('/')})`;
+
+    const horaInicio = 7; const horaFim = 22;
+    const agendamentosDoDia = atendimentos.filter(a => a.data === dataSelecionada && a.status !== 'cancelado');
+    
+    for (let h = horaInicio; h <= horaFim; h++) {
+        const minutos = ["00", "30"];
+        minutos.forEach(min => {
+            if (h === horaFim && min === "30") return;
+            const horaSlotStr = formatarHora(h, min);
+            const ocupante = agendamentosDoDia.find(a => a.horario === horaSlotStr);
+            const div = document.createElement('div');
+            
+            if (ocupante) {
+                div.className = 'slot ocupado';
+                div.innerHTML = `<strong>${horaSlotStr}</strong><span>${ocupante.cliente.split(' ')[0]}</span>`;
+            } else {
+                div.className = 'slot livre';
+                div.innerHTML = `<strong>${horaSlotStr}</strong><span>LIVRE</span>`;
+                div.onclick = function() { 
+                    document.getElementById('horario').value = horaSlotStr; 
+                    document.getElementById('cliente').focus(); 
+                };
+            }
+            gridHorarios.appendChild(div);
+        });
+    }
+}
+
+// Auxiliares
 function formatarHora(h, m) { return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; }
+
 function arredondarHorario(horarioStr) {
     if(!horarioStr) return "";
     let [h, m] = horarioStr.split(':').map(Number);
     if (m < 15) m = 0; else if (m < 45) m = 30; else { m = 0; h = h + 1; }
     if (h > 22) h = 22; if (h < 7) h = 7; 
     return formatarHora(h, m);
+}
+
+function verificarConflito(data, horario, ignorarId = null) {
+    return atendimentos.some(a => a.data === data && a.horario === horario && a.status !== 'cancelado' && a.id !== ignorarId);
 }
 
 // Cadastrar
@@ -176,129 +251,79 @@ if(form) {
         const valor = parseFloat(document.getElementById('valor').value);
 
         if(!horario) { alert("Selecione um horário!"); return; }
-        if (verificarConflito(data, horario)) { if(!confirm(`Horário ${horario} já está ocupado. Encaixar?`)) return; }
+        if (verificarConflito(data, horario)) { if(!confirm(`Horário ${horario} ocupado. Encaixar?`)) return; }
 
         push(dbRef, { cliente, procedimento, data, horario, valor, status: 'pendente' });
         form.reset();
         document.getElementById('data').value = data; 
-        document.getElementById('cliente').focus();
+        gerarMapaHorarios(data);
     });
 }
 
-function verificarConflito(data, horario, ignorarId = null) {
-    return atendimentos.some(a => a.data === data && a.horario === horario && a.status !== 'cancelado' && a.id !== ignorarId);
-}
-
-// Mapa
-function gerarMapaHorarios(dataSelecionada) {
-    if(!gridHorarios) return;
-    gridHorarios.innerHTML = ''; 
-    const horaInicio = 7; const horaFim = 22;
-    const agendamentosDoDia = atendimentos.filter(a => a.data === dataSelecionada && a.status !== 'cancelado');
-    for (let h = horaInicio; h <= horaFim; h++) {
-        const minutos = ["00", "30"];
-        minutos.forEach(min => {
-            if (h === horaFim && min === "30") return;
-            const horaSlotStr = formatarHora(h, min);
-            const ocupante = agendamentosDoDia.find(a => a.horario === horaSlotStr);
-            const div = document.createElement('div');
-            if (ocupante) {
-                div.className = 'slot ocupado';
-                div.innerHTML = `<strong>${horaSlotStr}</strong><span>${ocupante.cliente.split(' ')[0]}</span>`;
-            } else {
-                div.className = 'slot livre';
-                div.innerHTML = `<strong>${horaSlotStr}</strong><span>LIVRE</span>`;
-                div.onclick = function() { document.getElementById('horario').value = horaSlotStr; document.getElementById('cliente').focus(); };
+// Importar
+window.importarDados = function() {
+    const texto = document.getElementById('campo-importar').value;
+    if (!texto.trim()) { alert("Cole o texto primeiro!"); return; }
+    const linhas = texto.split('\n'); let contador = 0;
+    
+    linhas.forEach(linha => {
+        if (!linha.trim()) return;
+        const partes = linha.split(',').map(p => p.trim());
+        if (partes.length >= 5) {
+            const nome = partes[0]; const proc = partes[1]; const dataRaw = partes[2]; const horaRaw = partes[3]; const valorStr = partes[4];
+            let dataFinalIso = ""; const dataObj = new Date();
+            if (!dataRaw.includes('/')) { 
+                const mes = String(dataObj.getMonth() + 1).padStart(2, '0'); 
+                dataFinalIso = `${dataObj.getFullYear()}-${mes}-${String(dataRaw).padStart(2, '0')}`; 
+            } else { 
+                const p = dataRaw.split('/'); 
+                if (p.length === 2) dataFinalIso = `${dataObj.getFullYear()}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
             }
-            gridHorarios.appendChild(div);
-        });
-    }
-}
-
-// Substitua a função atualizarTela antiga por esta:
-function atualizarTela() {
-    if(!listaClientes) return;
-    listaClientes.innerHTML = '';
-    
-    let somaDiaConfirmado = 0; 
-    let somaDiaPrevisto = 0; 
-    let somaMesConfirmado = 0;
-    
-    // Pega a data do input ou usa hoje
-    const dataInput = document.getElementById('data') ? document.getElementById('data').value : hoje;
-    const mesAtualIso = new Date().toISOString().slice(0, 7);
-    
-    // Atualiza o mapa se a data mudou
-    if(dataInput && tituloMapa) { 
-        tituloMapa.innerText = `(${dataInput.split('-').reverse().join('/')})`; 
-        gerarMapaHorarios(dataInput); 
-    }
-
-    // ORDENAÇÃO: Primeiro por Data (Decrescente ou Crescente), depois por Hora
-    // Mudei para b.data - a.data se quiser ver os mais recentes primeiro, 
-    // mas mantive a ordem cronológica padrão abaixo:
-    atendimentos.sort((a, b) => {
-        if (a.data !== b.data) return a.data.localeCompare(b.data);
-        return a.horario.localeCompare(b.horario);
-    });
-
-    let ultimaDataRenderizada = null; // Variável de controle para o agrupamento
-
-    atendimentos.forEach(item => {
-        // --- CÁLCULO DOS TOTAIS (Matemática continua igual) ---
-        if (item.data === dataInput) {
-            if (item.status === 'concluido') somaDiaConfirmado += item.valor;
-            if (item.status === 'pendente') somaDiaPrevisto += item.valor;
-        }
-        if (item.data.startsWith(mesAtualIso) && item.status === 'concluido') somaMesConfirmado += item.valor;
-
-        // --- RENDERIZAÇÃO VISUAL ---
-        
-        // 1. Verifica se precisa criar o CABEÇALHO DA DATA
-        if (item.data !== ultimaDataRenderizada) {
-            const dataFormatada = item.data.split('-').reverse().join('/');
+            const valorFinal = parseFloat(valorStr.replace(',', '.'));
+            const horaFinal = arredondarHorario(horaRaw);
             
-            // Cria uma linha especial que serve de separador
-            const rowSeparador = document.createElement('tr');
-            rowSeparador.className = "row-separador-data";
-            // colspan='5' faz a linha ocupar a tabela toda
-            rowSeparador.innerHTML = `
-                <td colspan="5">
-                    <i class="fas fa-calendar-day"></i> ${dataFormatada}
-                </td>
-            `;
-            listaClientes.appendChild(rowSeparador);
-            
-            ultimaDataRenderizada = item.data; // Atualiza o controle
+            if(dataFinalIso && !isNaN(valorFinal)) {
+                push(dbRef, { cliente: nome, procedimento: proc, data: dataFinalIso, horario: horaFinal, valor: valorFinal, status: 'pendente' });
+                contador++;
+            }
         }
-
-        // 2. Cria a linha normal do CLIENTE
-        const dataPt = item.data.split('-').reverse().join('/');
-        const linha = document.createElement('tr');
-        linha.className = item.status;
-        
-        linha.innerHTML = `
-            <td><strong>${item.horario}</strong></td> <td>${item.cliente}</td>
-            <td>${item.procedimento}</td>
-            <td>R$ ${item.valor.toFixed(2).replace('.', ',')}</td>
-            <td>
-                <div class="acoes-container">
-                    <button onclick="window.marcarCompareceu('${item.id}')" class="btn-acao btn-ok" title="Concluir"><i class="fas fa-check"></i></button>
-                    <button onclick="window.abrirModalRemarcar('${item.id}')" class="btn-acao btn-remarcar" title="Remarcar"><i class="fas fa-calendar-alt"></i></button>
-                    <button onclick="window.marcarCancelou('${item.id}')" class="btn-acao btn-cancel" title="Cancelar"><i class="fas fa-ban"></i></button>
-                    <button onclick="window.excluirDefinitivo('${item.id}')" class="btn-acao btn-trash" title="Excluir"><i class="fas fa-trash"></i></button>
-                </div>
-            </td>
-        `;
-        listaClientes.appendChild(linha);
     });
+    if (contador > 0) { alert(`${contador} importados!`); document.getElementById('campo-importar').value = ''; }
+    else { alert("Verifique o formato: Nome, Procedimento, Dia, Hora, Valor"); }
+};
 
-    // Atualiza os painéis de dinheiro lá embaixo
-    if(document.getElementById('total-dia')) document.getElementById('total-dia').innerText = `R$ ${somaDiaConfirmado.toFixed(2).replace('.', ',')}`;
-    if(document.getElementById('previsao-dia')) document.getElementById('previsao-dia').innerText = `(Pendente: R$ ${somaDiaPrevisto.toFixed(2).replace('.', ',')})`;
-    if(document.getElementById('total-mes')) document.getElementById('total-mes').innerText = `R$ ${somaMesConfirmado.toFixed(2).replace('.', ',')}`;
-}
-// Exportar Excel Profissional
+// Funções Globais (Ações)
+window.marcarCompareceu = function(id) { update(ref(db, `agendamentos/${id}`), { status: 'concluido' }); };
+window.marcarCancelou = function(id) { if(confirm("Cancelar?")) update(ref(db, `agendamentos/${id}`), { status: 'cancelado' }); };
+window.excluirDefinitivo = function(id) { if(confirm("Excluir pra sempre?")) remove(ref(db, `agendamentos/${id}`)); };
+
+// Modal
+window.abrirModalRemarcar = function(id) {
+    const item = atendimentos.find(a => a.id === id);
+    if(item) {
+        document.getElementById('id-para-remarcar').value = id;
+        document.getElementById('nova-data-modal').value = item.data;
+        document.getElementById('novo-horario-modal').value = item.horario;
+        document.getElementById('modal-remarcar').style.display = 'flex';
+    }
+};
+window.fecharModal = function() { document.getElementById('modal-remarcar').style.display = 'none'; };
+window.confirmarRemarcacao = function() {
+    const id = document.getElementById('id-para-remarcar').value;
+    const novaData = document.getElementById('nova-data-modal').value;
+    const novoHorario = document.getElementById('novo-horario-modal').value;
+    if(!novaData || !novoHorario) return;
+    if(verificarConflito(novaData, novoHorario, id)) { if(!confirm("Horário ocupado. Manter?")) return; }
+    update(ref(db, `agendamentos/${id}`), { data: novaData, horario: novoHorario, status: 'pendente' }).then(() => {
+        alert("Remarcado!"); fecharModal();
+    });
+};
+
+window.limparTudo = function() {
+    if(confirm("PERIGO: Isso apaga TODOS os dados. Tem certeza?")) remove(dbRef);
+};
+
+// Exportar
 window.exportarRelatorio = function() {
     if (atendimentos.length === 0) { alert("Nada para exportar."); return; }
     let lucroTotal = 0;
@@ -306,54 +331,13 @@ window.exportarRelatorio = function() {
     atendimentos.forEach(item => {
         const dt = item.data.split('-').reverse().join('/');
         const val = item.valor.toFixed(2).replace('.', ',');
-        let corStatus="#000"; let bgStatus="#fff"; let st="Pendente";
-        if (item.status === 'concluido') { st='Concluído'; bgStatus="#d4edda"; corStatus="#155724"; lucroTotal += item.valor; } 
-        else if (item.status === 'cancelado') { st='Cancelado'; bgStatus="#f8d7da"; corStatus="#721c24"; }
-        tabela += `<tr><td>${dt}</td><td>${item.horario}</td><td>${item.cliente}</td><td>${item.procedimento}</td><td>R$ ${val}</td><td style="background-color:${bgStatus};color:${corStatus};">${st}</td></tr>`;
+        let bgStatus="#fff"; let st="Pendente";
+        if (item.status === 'concluido') { st='Concluído'; bgStatus="#d4edda"; lucroTotal += item.valor; } 
+        else if (item.status === 'cancelado') { st='Cancelado'; bgStatus="#f8d7da"; }
+        tabela += `<tr><td>${dt}</td><td>${item.horario}</td><td>${item.cliente}</td><td>${item.procedimento}</td><td>R$ ${val}</td><td style="background-color:${bgStatus};">${st}</td></tr>`;
     });
     const totalFmt = lucroTotal.toFixed(2).replace('.', ',');
-    tabela += `<tr><td colspan="4" style="text-align:right;font-weight:bold;">TOTAL LUCRO (Concluídos):</td><td style="background-color:#d4af37;color:white;">R$ ${totalFmt}</td><td></td></tr></tbody></table>`;
-    const hojeObj = new Date();
-    const nomeArquivo = `Relatorio - ${String(hojeObj.getDate()).padStart(2,'0')}${String(hojeObj.getMonth()+1).padStart(2,'0')}${hojeObj.getFullYear()}.xls`;
+    tabela += `<tr><td colspan="4" style="text-align:right;">TOTAL LUCRO:</td><td style="background-color:#d4af37;color:white;">R$ ${totalFmt}</td><td></td></tr></tbody></table>`;
     const blob = new Blob(['\ufeff', tabela], { type: 'application/vnd.ms-excel' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = nomeArquivo; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-};
-
-// Globais
-window.importarDados = function() {
-    const texto = document.getElementById('campo-importar').value;
-    if (!texto.trim()) { alert("Cole o texto primeiro!"); return; }
-    const linhas = texto.split('\n'); let contador = 0;
-    linhas.forEach(linha => {
-        if (!linha.trim()) return;
-        const partes = linha.split(',');
-        if (partes.length >= 5) {
-            const nome = partes[0].trim(); const proc = partes[1].trim(); const dataRaw = partes[2].trim(); const horaRaw = partes[3].trim(); const valorStr = partes[4].trim();
-            let dataFinalIso = ""; const dataObj = new Date();
-            if (!dataRaw.includes('/')) { const ano = dataObj.getFullYear(); const mes = String(dataObj.getMonth() + 1).padStart(2, '0'); dataFinalIso = `${ano}-${mes}-${String(dataRaw).padStart(2, '0')}`; } 
-            else { const p = dataRaw.split('/'); if (p.length === 2) dataFinalIso = `${dataObj.getFullYear()}-${p[1]}-${p[0]}`; else if (p.length === 3) dataFinalIso = `${p[2]}-${p[1]}-${p[0]}`; }
-            let horaBruta = ""; if (horaRaw.includes(':')) horaBruta = horaRaw.length === 4 ? "0"+horaRaw : horaRaw; else horaBruta = `${String(parseInt(horaRaw)).padStart(2, '0')}:00`;
-            const horaFinal = arredondarHorario(horaBruta); const valorFloat = parseFloat(valorStr.replace('R$', '').trim());
-            if (!isNaN(valorFloat) && dataFinalIso !== "") { push(dbRef, { cliente: nome, procedimento: proc, data: dataFinalIso, horario: horaFinal, valor: valorFloat, status: 'pendente' }); contador++; }
-        }
-    });
-    if (contador > 0) { document.getElementById('campo-importar').value = ''; alert(`${contador} importados!`); } else { alert("Use vírgulas."); }
-};
-
-window.marcarCompareceu = function(id) { update(ref(db, `agendamentos/${id}`), { status: 'concluido' }); };
-window.marcarCancelou = function(id) { if(confirm("Cancelar?")) update(ref(db, `agendamentos/${id}`), { status: 'cancelado' }); };
-window.excluirDefinitivo = function(id) { if(confirm("Apagar?")) remove(ref(db, `agendamentos/${id}`)); };
-window.limparTudo = function() { if(confirm('APAGAR TUDO?')) remove(dbRef); };
-window.abrirModalRemarcar = function(id) { const i = atendimentos.find(x => x.id===id); if(i){ inputIdRemarcar.value=id; inputDataRemarcar.value=i.data; inputHoraRemarcar.value=i.horario; modal.style.display='flex'; } };
-window.fecharModal = function() { modal.style.display='none'; };
-window.confirmarRemarcacao = function() {
-    const id = inputIdRemarcar.value; const nData = inputDataRemarcar.value; const nHora = inputHoraRemarcar.value;
-    if(!nData || !nHora){ alert("Preencha tudo"); return; }
-    const item = atendimentos.find(x => x.id===id);
-    if(item) {
-        if(verificarConflito(nData, nHora, id)) if(!confirm(`Horário ${nHora} ocupado! Encaixar?`)) return;
-        update(ref(db, `agendamentos/${id}`), { data: nData, horario: nHora, status: 'pendente' });
-        fecharModal();
-    }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Relatorio_HCC.xls`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
 };

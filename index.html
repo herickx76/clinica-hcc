@@ -16,7 +16,6 @@
             </div>
             <h2>Acesso Restrito</h2>
             <p style="margin-bottom: 20px; color: #666;">HCC - Harmony Clinical Center</p>
-            
             <form id="form-login">
                 <div class="form-group">
                     <label>Usuário:</label>
@@ -81,7 +80,6 @@
                             <option value="">Selecione...</option>
                         </select>
                     </div>
-    
                     <div class="form-group">
                         <label>Valor (R$):</label>
                         <input type="number" id="valor" step="0.01" required placeholder="0,00">
@@ -112,11 +110,18 @@
                 <button onclick="limparTudo()" class="btn-danger-outline">Limpar Banco de Dados</button>
             </div>
 
+            <div class="filtro-container" style="background: #fff8e1; padding: 15px; border-radius: 8px; border: 1px solid #d4af37; margin-bottom: 20px; text-align: center;">
+                <label style="color: #222; font-size: 1.1rem; margin-bottom: 10px; display: block; font-weight: bold;">
+                    📅 Qual data deseja ver na lista?
+                </label>
+                <input type="date" id="filtro-data-lista" style="max-width: 200px; text-align: center; font-weight: bold; color: #d4af37; border: 2px solid #d4af37;">
+            </div>
+
             <div class="table-responsive">
                 <table>
                     <thead>
                         <tr>
-                            <th>Data/Hora</th>
+                            <th>Horário</th>
                             <th>Cliente</th>
                             <th>Procedimento</th>
                             <th>Valor</th>
@@ -129,12 +134,12 @@
 
             <div class="resumo-financeiro">
                 <div class="box-total total-dia">
-                    <span><i class="fas fa-coins"></i> Recebido Hoje:</span>
+                    <span><i class="fas fa-coins"></i> Total Selecionado:</span>
                     <strong id="total-dia">...</strong>
                     <small id="previsao-dia" style="display:block; margin-top:5px; font-size:0.8rem; opacity: 0.8;">Carregando...</small>
                 </div>
                 <div class="box-total total-mes">
-                    <span><i class="fas fa-chart-line"></i> Recebido Mês:</span>
+                    <span><i class="fas fa-chart-line"></i> Total Mês Atual:</span>
                     <strong id="total-mes">...</strong>
                 </div>
             </div>
