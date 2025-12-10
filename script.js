@@ -1,4 +1,6 @@
+// =================================================================
 // --- IMPORTAÇÕES DO FIREBASE ---
+// =================================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -7,7 +9,7 @@ import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from
 // CONFIGURAÇÃO FIREBASE
 // =================================================================
 const firebaseConfig = {
-  apiKey: "AIzaSyBLaOyPzX_lQE9yy6cksYC57InP96wsg3A",
+  apiKey: "AIzaSyBLaOyPzX_lQE9yy6cksYC57InP96wsg3A", // Lembre-se de manter sua API Key original aqui
   authDomain: "clinicahcc-9b1c8.firebaseapp.com",
   databaseURL: "https://clinicahcc-9b1c8-default-rtdb.firebaseio.com",
   projectId: "clinicahcc-9b1c8",
@@ -25,7 +27,7 @@ const auth = getAuth(app);
 let dbRef = ref(db, 'agendamentos'); // Padrão
 
 // =================================================================
-// 🔐 AUTENTICAÇÃO E ROTEAMENTO (A MÁGICA ESTÁ AQUI)
+// 🔐 AUTENTICAÇÃO E ROTEAMENTO
 // =================================================================
 
 const telaLogin = document.getElementById('tela-login');
@@ -44,10 +46,10 @@ onAuthStateChanged(auth, (user) => {
             // Se for o Hedney, muda para a pasta PILATES
             dbRef = ref(db, 'pilates');
             tituloPrincipal.innerText = "HCC - Setor Pilates 🧘‍♀️";
-            tituloPrincipal.style.color = "#d4af37"; // Destaque visual
+            tituloPrincipal.style.color = "#d4af37"; 
             document.title = "HCC - Pilates";
         } else {
-            // Se for outro (Ingridy, etc), vai para AGENDAMENTOS GERAL
+            // Se for outro, vai para AGENDAMENTOS GERAL
             dbRef = ref(db, 'agendamentos');
             tituloPrincipal.innerText = "HCC - Harmony Clinical Center";
             document.title = "HCC - Harmony Clinical Center";
@@ -92,7 +94,7 @@ window.fazerLogout = function() {
 };
 
 // =================================================================
-// LÓGICA DO SISTEMA (Tudo usa 'dbRef' que já foi configurado acima)
+// LÓGICA DO SISTEMA
 // =================================================================
 
 const form = document.getElementById('form-atendimento');
@@ -136,8 +138,6 @@ popularSelectsHorario();
 
 // Carregar Dados (Usa dbRef dinâmico)
 function carregarDados() {
-    // Desliga listener anterior se houver (boa prática)
-    // Mas aqui vamos simplificar:
     onValue(dbRef, (snapshot) => {
         const data = snapshot.val();
         atendimentos = []; 
@@ -151,7 +151,7 @@ function carregarDados() {
     });
 }
 
-// --- FUNÇÃO ATUALIZAR LISTA COM FILTRO ---
+// --- FUNÇÃO ATUALIZAR LISTA COM FILTRO E SOMAS ---
 function atualizarTela() {
     if(!listaClientes) return;
     listaClientes.innerHTML = '';
@@ -159,23 +159,21 @@ function atualizarTela() {
     let somaDiaConfirmado = 0; 
     let somaDiaPrevisto = 0; 
     let somaMesConfirmado = 0;
+    let somaMesExpectativa = 0; // Soma acumulada (Pendentes + Confirmados) do Mês
     
     // Filtro Data
     const dataFiltro = campoFiltro ? campoFiltro.value : hoje;
-    const mesAtualIso = new Date().toISOString().slice(0, 7);
+    const mesAtualIso = new Date().toISOString().slice(0, 7); // Ex: 2023-10
     
     // Atualiza título do mapa (visual)
     if(tituloMapa) tituloMapa.innerText = `(${dataFiltro.split('-').reverse().join('/')})`;
-    
-    // Gera mapa visual para a data do filtro (se quiser ver a disponibilidade daquele dia na lista)
-    // Nota: O mapa principal lá em cima segue o campo 'data' do cadastro.
     
     atendimentos.sort((a, b) => a.horario.localeCompare(b.horario));
 
     let temAgendamento = false;
 
     atendimentos.forEach(item => {
-        // Renderiza APENAS se for da data do filtro
+        // --- RENDERIZAÇÃO DA TABELA (APENAS DATA SELECIONADA) ---
         if (item.data === dataFiltro) {
             temAgendamento = true;
 
@@ -201,21 +199,44 @@ function atualizarTela() {
             listaClientes.appendChild(linha);
         }
 
-        if (item.data.startsWith(mesAtualIso) && item.status === 'concluido') {
-            somaMesConfirmado += item.valor;
+        // --- CÁLCULOS FINANCEIROS DO MÊS ---
+        if (item.data.startsWith(mesAtualIso)) {
+            // Soma apenas o que já está pago
+            if (item.status === 'concluido') {
+                somaMesConfirmado += item.valor;
+            }
+            // Soma TUDO que não foi cancelado (Confirmado + Pendente) = Expectativa
+            if (item.status !== 'cancelado') {
+                somaMesExpectativa += item.valor;
+            }
         }
     });
 
+    // Mensagem se vazio
     if(!temAgendamento) {
         listaClientes.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 20px; color: #999;">Nenhum cliente em ${dataFiltro.split('-').reverse().join('/')}</td></tr>`;
     }
 
+    // --- ATUALIZAÇÃO DOS TOTAIS NA TELA ---
+    
+    // TOTAIS DO DIA
     const labelTotalDia = document.querySelector('.total-dia span');
     if(labelTotalDia) labelTotalDia.innerHTML = `<i class="fas fa-coins"></i> Em ${dataFiltro.split('-').reverse().join('/')}:`;
 
-    if(document.getElementById('total-dia')) document.getElementById('total-dia').innerText = `R$ ${somaDiaConfirmado.toFixed(2).replace('.', ',')}`;
-    if(document.getElementById('previsao-dia')) document.getElementById('previsao-dia').innerText = `(A receber: R$ ${somaDiaPrevisto.toFixed(2).replace('.', ',')})`;
-    if(document.getElementById('total-mes')) document.getElementById('total-mes').innerText = `R$ ${somaMesConfirmado.toFixed(2).replace('.', ',')}`;
+    if(document.getElementById('total-dia')) 
+        document.getElementById('total-dia').innerText = `R$ ${somaDiaConfirmado.toFixed(2).replace('.', ',')}`;
+    
+    if(document.getElementById('previsao-dia')) 
+        document.getElementById('previsao-dia').innerText = `(A receber: R$ ${somaDiaPrevisto.toFixed(2).replace('.', ',')})`;
+
+    // TOTAIS DO MÊS
+    if(document.getElementById('total-mes')) 
+        document.getElementById('total-mes').innerText = `R$ ${somaMesConfirmado.toFixed(2).replace('.', ',')}`;
+    
+    // ATUALIZA A NOVA LINHA DE EXPECTATIVA DO MÊS
+    if(document.getElementById('previsao-mes')) {
+        document.getElementById('previsao-mes').innerText = `(Expectativa: R$ ${somaMesExpectativa.toFixed(2).replace('.', ',')})`;
+    }
 }
 
 // Mapa de Horários
@@ -223,7 +244,6 @@ function gerarMapaHorarios(dataSelecionada) {
     if(!gridHorarios) return;
     gridHorarios.innerHTML = ''; 
     
-    // Se o mapa estiver visível, atualiza o título dele também
     if(tituloMapa && document.getElementById('data').value === dataSelecionada) {
         tituloMapa.innerText = `(${dataSelecionada.split('-').reverse().join('/')})`;
     }
@@ -283,7 +303,6 @@ if(form) {
         if(!horario) { alert("Selecione um horário!"); return; }
         if (verificarConflito(data, horario)) { if(!confirm(`Horário ${horario} ocupado. Encaixar?`)) return; }
 
-        // push usa o dbRef correto (Pilates ou Agendamentos)
         push(dbRef, { cliente, procedimento, data, horario, valor, status: 'pendente' });
         form.reset();
         document.getElementById('data').value = data; 
@@ -326,17 +345,7 @@ window.importarDados = function() {
 };
 
 // Funções Globais (Ações)
-// Note que as funções de update/remove precisam do dbRef correto ou montar o caminho
-// Como o ID é único no Firebase, podemos montar o caminho usando dbRef.key? Não.
-// O jeito certo quando o dbRef varia:
-
 window.marcarCompareceu = function(id) { 
-    // dbRef já aponta para 'pilates' ou 'agendamentos', então só precisamos do filho 'id'
-    // Mas 'ref(db, ...)' cria uma nova ref absoluta.
-    // Como 'dbRef' é um objeto Reference, podemos usar 'child(dbRef, id)'? 
-    // No Firebase modular v9, a melhor forma é reconstruir o caminho com base na string.
-    
-    // Solução Segura: Descobrir qual o path atual
     const pathBase = dbRef.toString().includes('pilates') ? 'pilates' : 'agendamentos';
     update(ref(db, `${pathBase}/${id}`), { status: 'concluido' }); 
 };
@@ -389,7 +398,6 @@ window.confirmarRemarcacao = function() {
 window.exportarRelatorio = function() {
     if (atendimentos.length === 0) { alert("Nada para exportar."); return; }
     let lucroTotal = 0;
-    // Pega o nome do setor para o arquivo
     const nomeSetor = dbRef.toString().includes('pilates') ? 'PILATES' : 'ESTETICA';
     
     let tabela = `<table border="1"><thead><tr style="background-color:#222;color:#d4af37;"><th>Data</th><th>Horário</th><th>Cliente</th><th>Procedimento</th><th>Valor</th><th>Status</th></tr></thead><tbody>`;
